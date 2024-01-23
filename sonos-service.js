@@ -1,9 +1,11 @@
 const { getMetadataResult, getMediaURI } = require("./utils");
+const logger = require("./logger");
 
 var sonosService = {
   Sonos: {
     SonosSoap: {
       getMetadata: function (args) {
+        logger.debug("getMetadata sonos-service called with args", args)
         let type = args["id"]; // "root" or abs library item id "li_laksjdfklasdj"
 
         switch (type) {
@@ -14,12 +16,11 @@ var sonosService = {
         }
       },
       getMediaMetadata: function (args) {
-        console.log("oh it got called?");
-        console.log(args);
+        logger.debug("getMediaMetadata sonos-service called with args", args)
       },
       // get the actual URI of the audiobook / audiobook track we want to play
       getMediaURI: function (args) {
-        console.log("getMediaURI called");
+        logger.debug("getMediaURI sonos-service called with args", args)
         return getMediaURI(args["id"]);
       },
       getLastUpdate: function (args) {

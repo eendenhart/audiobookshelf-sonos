@@ -2,6 +2,7 @@ const soap = require("soap");
 const { updateAudioBookshelfProgress } = require("./utils");
 const express = require("express");
 const config = require("./config");
+const logger = require('./logger');
 
 /* CONFIG */
 const EXPRESS_APP = express();
@@ -14,6 +15,12 @@ const SONOS_WSDL_FILE = config.SONOS_WSDL_FILE;
 /**********/
 
 EXPRESS_APP.use(express.json()); // express.json allows for native body parsing
+EXPRESS_APP.use((req, res, next) => {
+  logger.debug(`Received request: ${req.method} ${req.url}`);
+  next();
+});
+
+
 EXPRESS_APP.listen(HTTP_PORT, function () {
   /* 
     SOAP server
@@ -28,14 +35,14 @@ EXPRESS_APP.listen(HTTP_PORT, function () {
     SONOS_SOAP_SERVICE,
     SONOS_WSDL_FILE,
     function () {
-      console.log("[soapServer] server initialized");
+      logger.info('Server Initialized...');
     }
   );
 
-  soaper.log = function (type, data) {
-    // uncomment to log SOAP requests coming in
-    // console.log(data)
-  };
+  // Even though this is set to DEBUG, it's still super noisy. Uncomment if needed, but most likely it won't be.
+  //soaper.log = function (type, data) {
+  //  logger.debug(data)
+  //};
 
   /*
     Sonos Cloud Queue Routes
@@ -43,10 +50,10 @@ EXPRESS_APP.listen(HTTP_PORT, function () {
     of the SMAPI / SOAP implementation above.
 
     POST /timePlayed documentation: https://developer.sonos.com/reference/cloud-queue-api/post-timeplayed/
-    Reportig documentation: https://developer.sonos.com/build/content-service-add-features/add-reporting/
+    Reporting documentation: https://developer.sonos.com/build/content-service-add-features/add-reporting/
   */
   EXPRESS_APP.get("/manifest", (req, res) => {
-    console.log("[soapServer] /manifest called");
+    logger.info("/manifest endpoint hit")
     res.send({
       schemaVersion: "1.0",
       endpoints: [
@@ -58,15 +65,15 @@ EXPRESS_APP.listen(HTTP_PORT, function () {
     });
   });
 
-  // TODO: Remove this probably? I think I saw it called once.. but it's never returned something, so it's probably safe to remove.
-  EXPRESS_APP.post("/playback/v2.1/report", (req, res) => {
-    console.log("[soapServer] /playback/v2.1/report called");
+  EXPRESS_APP.post(`${SOAP_ENDPOINT}/playback/v2.1/report`, (req, res) => {
+    logger.info(`${SOAP_ENDPOINT}/playback/v2.1/report endpoint hit`)
   });
 
-  EXPRESS_APP.post("/playback/v2.1/report/timePlayed", (req, res) => {
-    console.log("[soapServer] /playback/v2.1/report/timePlayed called");
+  EXPRESS_APP.post(`${SOAP_ENDPOINT}/playback/v2.1/report/timePlayed`, (req, res) => {
+    logger.info(`${SOAP_ENDPOINT}/playback/v2.1/report/timePlayed endpoint hit`);
 
     let sonosProgressUpdate = req.body.items[0];
+    logger.debug(`${SOAP_ENDPOINT}/playback/v2.1/report/timePlayed - sonosProgressUpdate`, sonosProgressUpdate)
     let progressUpdateForABS = {
       libraryItemId: sonosProgressUpdate.containerId,
       libraryItemIdAndFileName: sonosProgressUpdate.objectId,
